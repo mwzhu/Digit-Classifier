@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title>Digit Classifier</title>
+  <!-- CSS -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- p5.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.6.1/p5.js"></script>
+  <!-- tensorflowjs -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+</head>
+
+<body>
+
+  <script>
+    async function init() {
+      mnist = await tf.loadLayersModel('https://mwzhu.github.io/Digit-Classifier/tensorflowjs/model.json');
+    }
+
+    init();
+
+    function setup() {
+      var canv = createCanvas(250, 250);
+      background('white');
+      canv.parent("canholder");
+    }
+
+    function touchMoved() {
+      strokeWeight(12);
+      line(mouseX, mouseY, pmouseX, pmouseY);
+    }
+
+    function getdata() {
+      tf.tidy(() => {
+        var idata = [];
+        var imgData = get();
+        imgData.resize(28, 28);
+        imgData.loadPixels();
+
+        var i;
+        for (i = 0; i < imgData.pixels.length; i += 4) {
+          idata.push(1 - (imgData.pixels[i] / 255.0));
+        }
+
+        var inputs = tf.tensor4d(idata, [1, 28, 28, 1]);
+
+        var prediction = mnist.predict(inputs);
+
+        var result = prediction.squeeze().argMax().dataSync();
+
+        document.getElementById("result").innerHTML = result;
+
+        var confidence = (prediction.squeeze().max().dataSync() * 100).toFixed(2) + "%";
+
+        document.getElementById("confidence").innerHTML = confidence;
+
+
+      });
+
+      console.log(tf.memory().numTensors);
+    }
+
+    function erase() {
+      background(255, 255, 255);
+    }
+  </script>
+
+  <h1>Digit Classifier</h1>
+  <p>Draw a single digit number (0-9) below</p>
+  <div class="middle-section">
+    <div id="canholder">
+    </div>
+    <div class="middle-text">
+      <h2>Predicted Number: <span id="result"></span></h2>
+      <h2>Confidence: <span id="confidence"></span> </h2>
+    </div>
+  </div>
+
+  <div class="bottom-section">
+    <button class="button" onclick="erase()">Clear</button>
+    <button class="button" onclick="getdata()">Predict</button>
+  </div>
+
+</body>
+
+</html>
